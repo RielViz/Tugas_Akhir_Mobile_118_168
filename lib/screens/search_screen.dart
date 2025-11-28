@@ -1,16 +1,15 @@
 // ----------------------------------------------
-// lib/features/search/screens/search_screen.dart
+// lib/screens/search_screen.dart
 // ----------------------------------------------
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ta_teori/screens/anime_detail_screen.dart';
-import 'package:ta_teori/repositories/anime_repository.dart';
-import 'package:ta_teori/repositories/search_history_repository.dart';
-import 'package:ta_teori/logic/search_bloc.dart';
-import 'package:ta_teori/models/anime_model.dart';
+import '../screens/anime_detail_screen.dart';
+import '../repositories/anime_repository.dart';
+import '../repositories/search_history_repository.dart';
+import '../logic/search_bloc.dart';
+import '../models/anime_model.dart';
 
-// Halaman Wrapper untuk menyediakan BLoC
 class SearchScreen extends StatelessWidget {
   const SearchScreen({super.key});
 
@@ -56,7 +55,7 @@ class _SearchViewState extends State<SearchView> {
             padding: const EdgeInsets.all(16.0),
             child: TextField(
               controller: _controller,
-              autofocus: true,
+              autofocus: false, // Ubah ke false agar tidak pop-up keyboard terus
               decoration: InputDecoration(
                 hintText: 'Ketik judul anime...',
                 prefixIcon: const Icon(Icons.search),
@@ -86,7 +85,10 @@ class _SearchViewState extends State<SearchView> {
                 if (state is SearchInitial) {
                   if (state.recentSearches.isEmpty) {
                     return const Center(
-                      child: Text('Ketik di atas untuk mulai mencari...'),
+                      child: Text(
+                        'Belum ada riwayat pencarian.',
+                        style: TextStyle(color: Colors.grey),
+                      ),
                     );
                   }
                   return _buildRecentSearchesList(context, state.recentSearches);
@@ -125,12 +127,17 @@ class _SearchViewState extends State<SearchView> {
       itemBuilder: (context, index) {
         final anime = results[index];
         return ListTile(
-          leading: Image.network(
-            anime.coverImageUrl,
-            width: 50,
-            fit: BoxFit.cover,
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Image.network(
+              anime.coverImageUrl,
+              width: 50,
+              height: 70,
+              fit: BoxFit.cover,
+              errorBuilder: (ctx, err, st) => const Icon(Icons.broken_image),
+            ),
           ),
-          title: Text(anime.title),
+          title: Text(anime.title, maxLines: 1, overflow: TextOverflow.ellipsis),
           subtitle: Text(
               'Skor: ${anime.averageScore != null ? (anime.averageScore! / 10.0).toStringAsFixed(1) : 'N/A'}'),
           onTap: () {
@@ -160,15 +167,16 @@ class _SearchViewState extends State<SearchView> {
                 'Pencarian Terakhir',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-              TextButton(
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.redAccent,
+              if (history.isNotEmpty)
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.redAccent,
+                  ),
+                  child: const Text('Hapus Semua'),
+                  onPressed: () {
+                    context.read<SearchBloc>().add(ClearRecentSearches());
+                  },
                 ),
-                child: const Text('Hapus Semua'),
-                onPressed: () {
-                  context.read<SearchBloc>().add(ClearRecentSearches());
-                },
-              ),
             ],
           ),
         ),
@@ -178,8 +186,15 @@ class _SearchViewState extends State<SearchView> {
             itemBuilder: (context, index) {
               final query = history[index];
               return ListTile(
-                leading: const Icon(Icons.history),
+                leading: const Icon(Icons.history, color: Colors.grey),
                 title: Text(query),
+                // --- TOMBOL HAPUS PER ITEM (X) ---
+                trailing: IconButton(
+                  icon: const Icon(Icons.close, size: 20, color: Colors.grey),
+                  onPressed: () {
+                    context.read<SearchBloc>().add(RemoveSpecificSearch(term: query));
+                  },
+                ),
                 onTap: () {
                   _controller.text = query;
                   _controller.selection =

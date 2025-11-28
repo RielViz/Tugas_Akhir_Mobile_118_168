@@ -1,15 +1,15 @@
-// ------------------------------------------
-// lib/features/home/screens/home_screen.dart
-// ------------------------------------------
+// ---------------------------------------------------------
+// lib/screens/home_screen.dart
+// ---------------------------------------------------------
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ta_teori/repositories/anime_repository.dart';
-import 'package:ta_teori/screens/anime_detail_screen.dart';
-import 'package:ta_teori/widgets/anime_card.dart';
-import 'package:ta_teori/logic/home_bloc.dart';
+import '../repositories/anime_repository.dart';
+import '../logic/home_bloc.dart';
+import '../models/anime_model.dart';
+import '../widgets/anime_card.dart';
+import 'anime_detail_screen.dart';
 
-//"Halaman Wrapper" yang menyediakan BLoC
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -18,14 +18,12 @@ class HomeScreen extends StatelessWidget {
     return BlocProvider(
       create: (context) => HomeBloc(
         animeRepository: RepositoryProvider.of<AnimeRepository>(context),
-      )
-        ..add(const FetchHomeData()),
+      )..add(const FetchHomeData()),
       child: const HomeView(),
     );
   }
 }
 
-// Ini adalah UI Halaman Home yang sebenarnya
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
 
@@ -33,65 +31,102 @@ class HomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Trending Now🔥'),
+        title: const Text('AniList Home', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              context.read<HomeBloc>().add(const FetchHomeData(isRefresh: true));
-            },
+            onPressed: () => context.read<HomeBloc>().add(const FetchHomeData(isRefresh: true)),
           ),
         ],
       ),
       body: BlocBuilder<HomeBloc, HomeState>(
         builder: (context, state) {
-          if (state is HomeLoading || state is HomeInitial) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+          if (state is HomeLoading) {
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (state is HomeLoaded) {
-            return GridView.builder(
-              padding: const EdgeInsets.all(8.0),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.7,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-              ),
-              itemCount: state.popularAnime.length,
-              itemBuilder: (context, index) {
-                final anime = state.popularAnime[index];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            AnimeDetailScreen(animeId: anime.id),
-                      ),
-                    );
-                  },
-                  child: AnimeCard(anime: anime),
-                );
-              },
-            );
-          }
+            return RefreshIndicator(
+              onRefresh: () async => context.read<HomeBloc>().add(const FetchHomeData(isRefresh: true)),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // TRENDING
+                    _buildSectionHeader("TRENDING NOW"),
+                    _buildHorizontalList(context, state.trending),
 
-          if (state is HomeError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'Gagal memuat data:\n${state.message}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red),
+                    // THIS SEASON
+                    _buildSectionHeader("POPULAR THIS SEASON"),
+                    _buildHorizontalList(context, state.thisSeason),
+
+                    // NEXT SEASON
+                    _buildSectionHeader("UPCOMING NEXT SEASON"),
+                    _buildHorizontalList(context, state.nextSeason),
+
+                    // ALL TIME
+                    _buildSectionHeader("ALL TIME POPULAR"),
+                    _buildHorizontalList(context, state.allTime),
+                    
+                    const SizedBox(height: 24),
+                  ],
                 ),
               ),
             );
           }
 
-          return const Center(child: Text('Terjadi kesalahan.'));
+          if (state is HomeError) {
+            return Center(child: Text("Error: ${state.message}", style: const TextStyle(color: Colors.red)));
+          }
+
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+  }
+
+  // Widget Header Simpel (Tanpa View All)
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.0,
+          color: Colors.white, // Pastikan kontras dengan background gelap
+        ),
+      ),
+    );
+  }
+
+  // Widget List Horizontal (Bisa digeser)
+  Widget _buildHorizontalList(BuildContext context, List<AnimeModel> animeList) {
+    return SizedBox(
+      height: 230, // Tinggi area list sedikit ditambah agar tidak terpotong
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal, // Fitur scroll ke samping
+        physics: const BouncingScrollPhysics(), // Efek pantul saat mentok (iOS style)
+        itemCount: animeList.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          final anime = animeList[index];
+          return SizedBox(
+            width: 125, // Lebar kartu
+            child: GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => AnimeDetailScreen(animeId: anime.id),
+                  ),
+                );
+              },
+              child: AnimeCard(anime: anime),
+            ),
+          );
         },
       ),
     );

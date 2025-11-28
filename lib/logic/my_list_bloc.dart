@@ -1,3 +1,7 @@
+// ---------------------------------------------------------
+// lib/logic/my_list_bloc.dart
+// ---------------------------------------------------------
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../models/my_anime_entry_model.dart';
@@ -26,6 +30,22 @@ class AddOrUpdateEntry extends MyListEvent {
   List<Object> get props => [entry];
 }
 
+// UPDATE: Tambah parameter maxEpisodes untuk logika status otomatis
+class UpdateEpisodeProgress extends MyListEvent {
+  final int animeId;
+  final int newProgress;
+  final int maxEpisodes; 
+
+  const UpdateEpisodeProgress({
+    required this.animeId, 
+    required this.newProgress,
+    required this.maxEpisodes,
+  });
+
+  @override
+  List<Object> get props => [animeId, newProgress, maxEpisodes];
+}
+
 // --- STATES ---
 abstract class MyListState extends Equatable {
   const MyListState();
@@ -47,6 +67,8 @@ class MyListBloc extends Bloc<MyListEvent, MyListState> {
   final MyListRepository myListRepository;
 
   MyListBloc({required this.myListRepository}) : super(MyListLoading()) {
+    
+    // Load Data
     on<LoadMyList>((event, emit) {
       try {
         final list = myListRepository.getMyList();
@@ -56,14 +78,38 @@ class MyListBloc extends Bloc<MyListEvent, MyListState> {
       }
     });
 
+    // Add / Update Data
     on<AddOrUpdateEntry>((event, emit) async {
       await myListRepository.addOrUpdateAnime(event.entry);
-      add(LoadMyList());
+      add(LoadMyList()); // Reload UI setelah update
     });
 
+    // Remove Data
     on<RemoveFromMyList>((event, emit) async {
       await myListRepository.deleteAnime(event.animeId);
       add(LoadMyList());
+    });
+
+    // HANDLER UPDATE: Logika Otomatisasi Status
+    on<UpdateEpisodeProgress>((event, emit) async {
+      final entry = myListRepository.getEntry(event.animeId);
+      
+      if (entry != null) {
+        // Update progress
+        entry.episodesWatched = event.newProgress;
+        
+        // Logika 1: Jika progress menyentuh max -> Completed
+        if (event.maxEpisodes > 0 && entry.episodesWatched >= event.maxEpisodes) {
+          entry.status = 'Completed';
+        } 
+        // Logika 2: Jika progress bertambah (>0) dari Planning -> Watching
+        else if (entry.episodesWatched > 0 && entry.status == 'Planning') {
+          entry.status = 'Watching';
+        }
+
+        await entry.save(); 
+        add(LoadMyList());
+      }
     });
   }
 }

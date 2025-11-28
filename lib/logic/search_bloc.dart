@@ -1,6 +1,10 @@
+// -----------------------------------------
+// lib/logic/search_bloc.dart
+// -----------------------------------------
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:stream_transform/stream_transform.dart'; // Pastikan package ini ada di pubspec.yaml
+import 'package:stream_transform/stream_transform.dart';
 
 import '../models/anime_model.dart';
 import '../repositories/anime_repository.dart';
@@ -21,7 +25,16 @@ class SearchQueryChanged extends SearchEvent {
 }
 
 class LoadRecentSearches extends SearchEvent {}
+
 class ClearRecentSearches extends SearchEvent {}
+
+// EVENT BARU: Hapus 1 item history
+class RemoveSpecificSearch extends SearchEvent {
+  final String term;
+  const RemoveSpecificSearch({required this.term});
+  @override
+  List<Object> get props => [term];
+}
 
 // --- STATES ---
 abstract class SearchState extends Equatable {
@@ -53,7 +66,7 @@ class SearchError extends SearchState {
   List<Object> get props => [message];
 }
 
-// --- HELPER DEBOUNCE ---
+// Helper Debounce
 EventTransformer<E> _debounce<E>(Duration duration) {
   return (events, mapper) {
     return events.debounce(duration).switchMap(mapper);
@@ -93,15 +106,25 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
           await searchHistoryRepository.addSearchTerm(event.query);
           emit(SearchLoaded(results: results));
         } catch (e) {
-          emit(SearchError(message: e.toString().replaceFirst("Exception: ", "")));
+          emit(SearchError(
+              message: e.toString().replaceFirst("Exception: ", "")));
         }
       },
       transformer: _debounce(const Duration(milliseconds: 500)),
     );
 
+    // HANDLER HAPUS SEMUA
     on<ClearRecentSearches>((event, emit) async {
       await searchHistoryRepository.clearSearchHistory();
       emit(const SearchInitial(recentSearches: []));
+    });
+
+    // HANDLER BARU: HAPUS 1 ITEM
+    on<RemoveSpecificSearch>((event, emit) async {
+      await searchHistoryRepository.deleteSearchTerm(event.term);
+      // Reload history setelah dihapus
+      final updatedHistory = searchHistoryRepository.getSearchHistory();
+      emit(SearchInitial(recentSearches: updatedHistory));
     });
   }
 }

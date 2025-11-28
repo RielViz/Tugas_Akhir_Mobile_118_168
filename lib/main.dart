@@ -1,52 +1,58 @@
 // ---------------------------------------------------
-// lib/main.dart (REVISI)
+// lib/main.dart
 // ---------------------------------------------------
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:ta_teori/services/graphql_client.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 
-import 'package:ta_teori/services/notification_service.dart';
+// Services
+import 'services/notification_service.dart';
+import 'services/graphql_client.dart';
+import 'services/anilist_api_provider.dart';
 
-// Import model
-import 'package:ta_teori/models/user_model.dart';
-import 'package:ta_teori/models/my_anime_entry_model.dart';
+// Models
+import 'models/user_model.dart';
+import 'models/my_anime_entry_model.dart';
 
-// Import provider
-import 'package:ta_teori/services/anilist_api_provider.dart';
+// Repositories
+import 'repositories/auth_repository.dart';
+import 'repositories/anime_repository.dart';
+import 'repositories/my_list_repository.dart';
+import 'repositories/search_history_repository.dart';
 
-// Import repository
-import 'package:ta_teori/repositories/auth_repository.dart';
-import 'package:ta_teori/repositories/anime_repository.dart';
-import 'package:ta_teori/repositories/my_list_repository.dart';
-import 'package:ta_teori/repositories/search_history_repository.dart';
+// Logic (BLoC)
+import 'logic/auth_bloc.dart';
+import 'logic/my_list_bloc.dart';
 
-// Import BLoC & Screen
-import 'package:ta_teori/logic/auth_bloc.dart';
-import 'package:ta_teori/screens/login_screen.dart';
-import 'package:ta_teori/logic/my_list_bloc.dart';
+// Screens
+import 'screens/login_screen.dart';
+import 'screens/main_shell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   tzdata.initializeTimeZones();
   await NotificationService().init();
   await Hive.initFlutter();
-  await initHiveForFlutter();
 
-  // Daftarkan semua Adapter
+  // Register Adapters
   Hive.registerAdapter(UserAdapter());
-  Hive.registerAdapter(MyAnimeEntryModelAdapter());
+  Hive.registerAdapter(MyAnimeEntryModelAdapter()); // Pastikan tanpa 'as TypeAdapter'
 
-  // Buka semua Box kustom
+  // Open Boxes
   await Hive.openBox<User>('userBox');
   await Hive.openBox<MyAnimeEntryModel>('myAnimeEntryBox');
-  await Hive.openBox('graphqlClientStore');
+  await Hive.openBox('graphqlClientStore'); // Buka box untuk cache API
   await Hive.openBox<String>('searchHistoryBox');
+  await Hive.openBox('sessionBox');
 
-  final client = GraphQLClientConfig.initializeClient();
+  // Ambil box yang sudah dibuka
+  final graphqlBox = Hive.box('graphqlClientStore');
+  
+  // Kirim ke config (sekarang tipenya cocok: Box<dynamic>)
+  final client = GraphQLClientConfig.initializeClient(graphqlBox);
 
   runApp(MyApp(graphqlClient: client));
 }
@@ -63,31 +69,25 @@ class MyApp extends StatelessWidget {
       child: MultiRepositoryProvider(
         providers: [
           RepositoryProvider<AuthRepository>(
-            create: (context) => AuthRepository(),
-          ),
-          RepositoryProvider<AnilistApiProvider>(
-            create: (context) {
-              final client = graphqlClient.value;
-              return AnilistApiProvider(client: client);
-            },
-          ),
+              create: (context) => AuthRepository()),
+          RepositoryProvider<AnilistApiProvider>(create: (context) {
+            final client = graphqlClient.value;
+            return AnilistApiProvider(client: client);
+          }),
           RepositoryProvider<AnimeRepository>(
-            create: (context) => AnimeRepository(
-                apiProvider: context.read<AnilistApiProvider>()),
-          ),
+              create: (context) => AnimeRepository(
+                  apiProvider: context.read<AnilistApiProvider>())),
           RepositoryProvider<MyListRepository>(
-            create: (context) => MyListRepository(),
-          ),
+              create: (context) => MyListRepository()),
           RepositoryProvider<SearchHistoryRepository>(
-            create: (context) => SearchHistoryRepository(),
-          ),
+              create: (context) => SearchHistoryRepository())
         ],
         child: MultiBlocProvider(
           providers: [
             BlocProvider<AuthBloc>(
               create: (context) => AuthBloc(
                 authRepository: context.read<AuthRepository>(),
-              ),
+              )..add(AuthCheckSession()), 
             ),
             BlocProvider<MyListBloc>(
               create: (context) => MyListBloc(
@@ -102,7 +102,14 @@ class MyApp extends StatelessWidget {
               primarySwatch: Colors.blue,
               brightness: Brightness.dark,
             ),
-            home: const LoginPage(),
+            home: BlocBuilder<AuthBloc, AuthState>(
+              builder: (context, state) {
+                if (state is AuthAuthenticated) {
+                  return const MainShell();
+                }
+                return const LoginPage();
+              },
+            ),
           ),
         ),
       ),

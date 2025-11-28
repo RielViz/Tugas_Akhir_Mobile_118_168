@@ -16,7 +16,6 @@ class User extends HiveObject {
   @HiveField(2)
   String? profileImagePath;
 
-
   User({
     required this.username,
     required this.encryptedPassword,

@@ -1,3 +1,7 @@
+// --------------------------------------
+// lib/logic/auth_bloc.dart
+// --------------------------------------
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../models/user_model.dart';
@@ -9,6 +13,9 @@ abstract class AuthEvent extends Equatable {
   @override
   List<Object> get props => [];
 }
+
+// EVENT BARU: Cek Sesi
+class AuthCheckSession extends AuthEvent {}
 
 class LoginButtonPressed extends AuthEvent {
   final String username;
@@ -53,8 +60,12 @@ class AuthAuthenticated extends AuthState {
   @override
   List<Object> get props => [user];
 
-  AuthAuthenticated copyWith({User? user}) {
-    return AuthAuthenticated(user: user ?? this.user);
+  AuthAuthenticated copyWith({
+    User? user,
+  }) {
+    return AuthAuthenticated(
+      user: user ?? this.user,
+    );
   }
 }
 
@@ -70,10 +81,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
 
   AuthBloc({required this.authRepository}) : super(AuthInitial()) {
+    
+    // HANDLER BARU: Cek Sesi
+    on<AuthCheckSession>((event, emit) async {
+      // Jangan emit Loading agar tidak flicker di splash screen (opsional)
+      // emit(AuthLoading()); 
+      try {
+        final user = await authRepository.getCurrentUser();
+        if (user != null) {
+          emit(AuthAuthenticated(user: user));
+        } else {
+          emit(AuthUnauthenticated());
+        }
+      } catch (e) {
+        emit(AuthUnauthenticated());
+      }
+    });
+
     on<LoginButtonPressed>((event, emit) async {
       emit(AuthLoading());
       try {
-        final user = await authRepository.login(event.username, event.password);
+        final user = await authRepository.login(
+          event.username,
+          event.password,
+        );
         emit(AuthAuthenticated(user: user));
       } catch (e) {
         emit(AuthError(message: e.toString().replaceFirst("Exception: ", "")));
@@ -83,8 +114,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<RegisterButtonPressed>((event, emit) async {
       emit(AuthLoading());
       try {
-        await authRepository.register(event.username, event.password);
-        final user = await authRepository.login(event.username, event.password);
+        await authRepository.register(
+          event.username,
+          event.password,
+        );
+        final user = await authRepository.login(
+          event.username,
+          event.password,
+        );
         emit(AuthAuthenticated(user: user));
       } catch (e) {
         emit(AuthError(message: e.toString().replaceFirst("Exception: ", "")));
@@ -101,7 +138,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           );
           emit((state as AuthAuthenticated).copyWith(user: updatedUser));
         } catch (e) {
-          // Error handling jika perlu
+          // Error handling
         }
       }
     });

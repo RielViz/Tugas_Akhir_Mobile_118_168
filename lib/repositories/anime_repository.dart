@@ -1,28 +1,38 @@
 // -------------------------------------------
-// lib/data/repositories/anime_repository.dart
+// lib/repositories/anime_repository.dart
 // -------------------------------------------
 
-import 'package:ta_teori/models/anime_model.dart';
-import 'package:ta_teori/services/anilist_api_provider.dart';
+import '../models/anime_model.dart';
+import '../services/anilist_api_provider.dart';
 
 class AnimeRepository {
   final AnilistApiProvider apiProvider;
 
   AnimeRepository({required this.apiProvider});
 
-  Future<List<AnimeModel>> getPopularAnime(
-      {bool isRefresh = false}) async { 
+  // Return Map berisi List untuk setiap kategori
+  Future<Map<String, List<AnimeModel>>> getHomeData({bool isRefresh = false}) async {
     try {
-      final data = await apiProvider.getPopularAnime(isRefresh: isRefresh);
-      final List mediaList = data['Page']['media'];
-
-      return mediaList.map((item) => AnimeModel.fromJson(item)).toList();
-    } catch (e) {
+      final data = await apiProvider.getHomeData(isRefresh: isRefresh);
       
-      throw Exception('Gagal memuat data anime: $e');
+      // Helper function untuk parsing list
+      List<AnimeModel> parseList(String key) {
+        final List list = data[key]['media'];
+        return list.map((item) => AnimeModel.fromJson(item)).toList();
+      }
+
+      return {
+        'trending': parseList('trending'),
+        'thisSeason': parseList('thisSeason'),
+        'nextSeason': parseList('nextSeason'),
+        'allTime': parseList('allTime'),
+      };
+    } catch (e) {
+      throw Exception('Gagal memuat data home: $e');
     }
   }
 
+  // ... (Method searchAnime dan getAnimeDetail BIARKAN TETAP SAMA)
   Future<List<AnimeModel>> searchAnime(String query) async {
     try {
       final data = await apiProvider.searchAnime(query);
