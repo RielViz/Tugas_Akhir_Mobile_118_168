@@ -6,31 +6,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:ta_teori/core/api/graphql_client.dart';
+import 'package:ta_teori/services/graphql_client.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 
-import 'package:ta_teori/core/services/notification_service.dart';
+import 'package:ta_teori/services/notification_service.dart';
 
 // Import model
-import 'package:ta_teori/data/models/user_model.dart';
-import 'package:ta_teori/data/models/saran_kesan_model.dart';
-import 'package:ta_teori/data/models/my_anime_entry_model.dart';
+import 'package:ta_teori/models/user_model.dart';
+import 'package:ta_teori/models/my_anime_entry_model.dart';
 
 // Import provider
-import 'package:ta_teori/data/providers/anilist_api_provider.dart';
+import 'package:ta_teori/services/anilist_api_provider.dart';
 
 // Import repository
-import 'package:ta_teori/data/repositories/auth_repository.dart';
-import 'package:ta_teori/data/repositories/anime_repository.dart';
-import 'package:ta_teori/data/repositories/my_list_repository.dart';
-import 'package:ta_teori/data/repositories/saran_kesan_repository.dart';
-import 'package:ta_teori/data/repositories/location_repository.dart';
-import 'package:ta_teori/data/repositories/search_history_repository.dart';
+import 'package:ta_teori/repositories/auth_repository.dart';
+import 'package:ta_teori/repositories/anime_repository.dart';
+import 'package:ta_teori/repositories/my_list_repository.dart';
+import 'package:ta_teori/repositories/search_history_repository.dart';
 
 // Import BLoC & Screen
-import 'package:ta_teori/features/auth/bloc/auth_bloc.dart';
-import 'package:ta_teori/features/auth/screens/login_screen.dart';
-import 'package:ta_teori/features/my_list/bloc/my_list_bloc.dart';
+import 'package:ta_teori/logic/auth_bloc.dart';
+import 'package:ta_teori/screens/login_screen.dart';
+import 'package:ta_teori/logic/my_list_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,12 +38,10 @@ void main() async {
 
   // Daftarkan semua Adapter
   Hive.registerAdapter(UserAdapter());
-  Hive.registerAdapter(SaranKesanAdapter());
   Hive.registerAdapter(MyAnimeEntryModelAdapter());
 
   // Buka semua Box kustom
   await Hive.openBox<User>('userBox');
-  await Hive.openBox<SaranKesan>('saranKesanBox');
   await Hive.openBox<MyAnimeEntryModel>('myAnimeEntryBox');
   await Hive.openBox('graphqlClientStore');
   await Hive.openBox<String>('searchHistoryBox');
@@ -82,12 +77,6 @@ class MyApp extends StatelessWidget {
           ),
           RepositoryProvider<MyListRepository>(
             create: (context) => MyListRepository(),
-          ),
-          RepositoryProvider<SaranKesanRepository>(
-            create: (context) => SaranKesanRepository(),
-          ),
-          RepositoryProvider<LocationRepository>(
-            create: (context) => LocationRepository(),
           ),
           RepositoryProvider<SearchHistoryRepository>(
             create: (context) => SearchHistoryRepository(),
