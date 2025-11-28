@@ -49,18 +49,7 @@ class SaveAnimeEntry extends AnimeDetailEvent {
   });
 
   @override
-  List<Object?> get props => [
-        animeId,
-        title,
-        coverImageUrl,
-        status,
-        progress,
-        score,
-        startDate,
-        finishDate,
-        totalRewatches,
-        notes
-      ];
+  List<Object?> get props => [animeId, title, coverImageUrl, status, progress, score, startDate, finishDate, totalRewatches, notes];
 }
 
 class RemoveFromMyList extends AnimeDetailEvent {
@@ -74,8 +63,7 @@ class RemoveFromMyList extends AnimeDetailEvent {
 class UpdateEntryProgress extends AnimeDetailEvent {
   final int progress;
   final int maxEpisodes;
-  const UpdateEntryProgress(
-      {required this.progress, required this.maxEpisodes});
+  const UpdateEntryProgress({required this.progress, required this.maxEpisodes});
   @override
   List<Object> get props => [progress, maxEpisodes];
 }
@@ -132,13 +120,13 @@ class AnimeDetailBloc extends Bloc<AnimeDetailEvent, AnimeDetailState> {
     required this.animeRepository,
     required this.myListRepository,
   }) : super(AnimeDetailLoading()) {
+    
     on<LoadAnimeDetail>((event, emit) async {
       emit(AnimeDetailLoading());
       try {
         final anime = await animeRepository.getAnimeDetail(event.animeId);
         final bool isInList = myListRepository.isInList(event.animeId);
-        final MyAnimeEntryModel? entry =
-            isInList ? myListRepository.getEntry(event.animeId) : null;
+        final MyAnimeEntryModel? entry = isInList ? myListRepository.getEntry(event.animeId) : null;
 
         emit(AnimeDetailLoaded(
           anime: anime,
@@ -146,8 +134,7 @@ class AnimeDetailBloc extends Bloc<AnimeDetailEvent, AnimeDetailState> {
           entry: entry,
         ));
       } catch (e) {
-        emit(AnimeDetailError(
-            message: e.toString().replaceFirst("Exception: ", "")));
+        emit(AnimeDetailError(message: e.toString().replaceFirst("Exception: ", "")));
       }
     });
 
@@ -169,7 +156,7 @@ class AnimeDetailBloc extends Bloc<AnimeDetailEvent, AnimeDetailState> {
         );
 
         await myListRepository.addOrUpdateAnime(newEntry);
-
+        
         emit(currentState.copyWith(
           isInMyList: true,
           entry: newEntry,
@@ -180,8 +167,7 @@ class AnimeDetailBloc extends Bloc<AnimeDetailEvent, AnimeDetailState> {
     on<RemoveFromMyList>((event, emit) async {
       if (state is AnimeDetailLoaded) {
         await myListRepository.deleteAnime(event.animeId);
-        emit((state as AnimeDetailLoaded)
-            .copyWith(isInMyList: false, entry: null));
+        emit((state as AnimeDetailLoaded).copyWith(isInMyList: false, entry: null));
       }
     });
 

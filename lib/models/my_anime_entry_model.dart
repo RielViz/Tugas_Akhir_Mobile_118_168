@@ -23,7 +23,7 @@ class MyAnimeEntryModel extends HiveObject {
   int? userScore; // <--- HAPUS 'final' DISINI
 
   @HiveField(5)
-  int episodesWatched;
+  int episodesWatched; 
 
   @HiveField(6)
   DateTime? startDate; // <--- HAPUS 'final' DISINI
