@@ -1,0 +1,55 @@
+name: ta_teori
+description: A new Flutter project.
+
+publish_to: 'none' 
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 1. State Management (BLoC)
+  flutter_bloc: ^8.1.3
+  equatable: ^2.0.5
+
+  # 2. Database Lokal (Hive)
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # 3. API Client (GraphQL untuk AniList)
+  graphql_flutter: ^5.1.0
+
+  # 4. Enkripsi & Utilitas
+  bcrypt: ^1.1.3
+  intl: ^0.18.1
+  timezone: ^0.10.1
+  
+  # 5. Lain-lain
+  cupertino_icons: ^1.0.2
+  path_provider: ^2.0.11
+  geolocator: ^10.1.0 
+  flutter_local_notifications: ^18.0.1
+
+  image_picker: ^1.0.7  
+  path: ^1.8.3          
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # 1. Code Generators (Penting untuk Hive)
+  hive_generator: ^2.0.0
+  build_runner: ^2.4.6
+
+  flutter_lints: ^2.0.0
+  
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/ 
