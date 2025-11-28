@@ -46,7 +46,7 @@ void main() async {
   await Hive.openBox<MyAnimeEntryModel>('myAnimeEntryBox');
   await Hive.openBox('graphqlClientStore');
   await Hive.openBox<String>('searchHistoryBox');
-  // HAPUS: await Hive.openBox('sessionBox'); <-- Bagian ini dihapus
+  // HAPUS: sessionBox dihapus
 
   // Ambil box yang sudah dibuka
   final graphqlBox = Hive.box('graphqlClientStore');
@@ -80,7 +80,7 @@ class MyApp extends StatelessWidget {
           RepositoryProvider<MyListRepository>(
               create: (context) => MyListRepository()),
           RepositoryProvider<SearchHistoryRepository>(
-              create: (context) => SearchHistoryRepository())
+              create: (context) => SearchHistoryRepository()),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -88,7 +88,7 @@ class MyApp extends StatelessWidget {
               create: (context) => AuthBloc(
                 authRepository: context.read<AuthRepository>(),
               ),
-              // HAPUS: ..add(AuthCheckSession()), <-- Bagian ini dihapus
+              // HAPUS: AuthCheckSession dihapus
             ),
             BlocProvider<MyListBloc>(
               create: (context) => MyListBloc(
@@ -103,7 +103,7 @@ class MyApp extends StatelessWidget {
               primarySwatch: Colors.blue,
               brightness: Brightness.dark,
             ),
-            // KEMBALIKAN LANGSUNG KE LOGIN PAGE
+            // KEMBALI KE LOGIN LANGSUNG
             home: const LoginPage(),
           ),
         ),

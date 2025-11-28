@@ -4,7 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart'; // Pastikan package intl sudah terinstall
 import 'package:url_launcher/url_launcher.dart';
 import '../models/anime_model.dart';
 import '../models/my_anime_entry_model.dart';
@@ -32,18 +32,10 @@ class AnimeDetailScreen extends StatelessWidget {
 class AnimeDetailView extends StatelessWidget {
   const AnimeDetailView({super.key});
 
-  Future<void> _launchTrailer(BuildContext context, String url) async {
+  Future<void> _launchTrailer(String url) async {
     final Uri uri = Uri.parse(url);
-    try {
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        throw Exception('Could not launch');
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tidak dapat memutar trailer')),
-        );
-      }
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      debugPrint("Could not launch trailer");
     }
   }
 
@@ -52,8 +44,9 @@ class AnimeDetailView extends StatelessWidget {
     return Scaffold(
       body: BlocBuilder<AnimeDetailBloc, AnimeDetailState>(
         builder: (context, state) {
-          if (state is AnimeDetailLoading) return const Center(child: CircularProgressIndicator());
-          
+          if (state is AnimeDetailLoading)
+            return const Center(child: CircularProgressIndicator());
+
           if (state is AnimeDetailLoaded) {
             final anime = state.anime;
             return CustomScrollView(
@@ -62,7 +55,9 @@ class AnimeDetailView extends StatelessWidget {
                   expandedHeight: 300,
                   pinned: true,
                   flexibleSpace: FlexibleSpaceBar(
-                    title: Text(anime.title, style: const TextStyle(fontSize: 16, shadows: [Shadow(blurRadius: 4)])),
+                    title: Text(anime.title,
+                        style: const TextStyle(
+                            fontSize: 16, shadows: [Shadow(blurRadius: 4)])),
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
@@ -72,7 +67,10 @@ class AnimeDetailView extends StatelessWidget {
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
-                              colors: [Colors.transparent, Colors.black.withOpacity(0.9)],
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.9)
+                              ],
                             ),
                           ),
                         ),
@@ -87,27 +85,30 @@ class AnimeDetailView extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildHeaderInfo(context, anime),
-                          const SizedBox(height: 16),
-                          
-                          if (state.isInMyList && state.entry != null)
-                            _buildEpisodeProgress(context, state.entry!, anime),
-                          
-                          const SizedBox(height: 16),
+                          _buildHeaderInfo(anime),
+                          const SizedBox(height: 20),
                           _buildEditorButton(context, state),
                           const SizedBox(height: 24),
-                          const Text("Sinopsis", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const Text("Sinopsis",
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 8),
                           Text(
-                            anime.description?.replaceAll(RegExp(r'<[^>]*>'), '') ?? "Tidak ada deskripsi.",
-                            style: const TextStyle(height: 1.5, color: Colors.white70),
+                            anime.description
+                                    ?.replaceAll(RegExp(r'<[^>]*>'), '') ??
+                                "Tidak ada deskripsi.",
+                            style: const TextStyle(
+                                height: 1.5, color: Colors.white70),
                           ),
                           const SizedBox(height: 24),
-                          if (anime.characters != null && anime.characters!.isNotEmpty)
+                          if (anime.characters != null &&
+                              anime.characters!.isNotEmpty)
                             _buildCharacterList(anime.characters!),
                           const SizedBox(height: 24),
-                          if (anime.recommendations != null && anime.recommendations!.isNotEmpty)
-                            _buildRecommendations(context, anime.recommendations!),
+                          if (anime.recommendations != null &&
+                              anime.recommendations!.isNotEmpty)
+                            _buildRecommendations(
+                                context, anime.recommendations!),
                           const SizedBox(height: 40),
                         ],
                       ),
@@ -123,101 +124,31 @@ class AnimeDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildHeaderInfo(BuildContext context, AnimeModel anime) {
+  Widget _buildHeaderInfo(AnimeModel anime) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("${anime.season ?? '?'} ${anime.seasonYear ?? ''}", style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text("${anime.episodes ?? '?'} Episode • ${anime.status ?? 'Unknown'}", style: const TextStyle(fontWeight: FontWeight.w500)),
-            ],
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("${anime.season ?? '?'} ${anime.seasonYear ?? ''}",
+                style: const TextStyle(
+                    color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(
+                "${anime.episodes ?? '?'} Episode • ${anime.status ?? 'Unknown'}",
+                style: const TextStyle(fontWeight: FontWeight.w500)),
+          ],
         ),
         if (anime.trailerUrl != null)
           OutlinedButton.icon(
-            onPressed: () => _launchTrailer(context, anime.trailerUrl!),
+            onPressed: () => _launchTrailer(anime.trailerUrl!),
             icon: const Icon(Icons.play_circle_fill, color: Colors.redAccent),
             label: const Text("Trailer", style: TextStyle(color: Colors.white)),
-            style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.redAccent)),
+            style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.redAccent)),
           ),
       ],
-    );
-  }
-
-  // --- WIDGET PROGRESS DENGAN FIX TOMBOL +/- ---
-  Widget _buildEpisodeProgress(BuildContext context, MyAnimeEntryModel entry, AnimeModel anime) {
-    final maxEps = anime.episodes ?? 0;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[800]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Progress (${entry.status})", 
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)
-              ),
-              Text(
-                "${entry.episodesWatched} / ${maxEps == 0 ? '?' : maxEps}",
-                style: const TextStyle(color: Colors.white70)
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: maxEps > 0 ? (entry.episodesWatched / maxEps) : 0,
-            backgroundColor: Colors.grey[800],
-            color: entry.status == 'Completed' ? Colors.green : Colors.blueAccent,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.remove_circle_outline, color: Colors.white70),
-                onPressed: entry.episodesWatched > 0
-                    ? () {
-                        context.read<AnimeDetailBloc>().add(UpdateEntryProgress(
-                          progress: entry.episodesWatched - 1,
-                          maxEpisodes: maxEps,
-                        ));
-                        // Update global list juga agar sinkron
-                        context.read<my_list.MyListBloc>().add(my_list.LoadMyList());
-                      }
-                    : null,
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.add_circle, 
-                  color: (entry.status == 'Completed') ? Colors.green : Colors.blue
-                ),
-                onPressed: (maxEps == 0 || entry.episodesWatched < maxEps)
-                    ? () {
-                        context.read<AnimeDetailBloc>().add(UpdateEntryProgress(
-                          progress: entry.episodesWatched + 1,
-                          maxEpisodes: maxEps,
-                        ));
-                        // Update global list juga agar sinkron
-                        context.read<my_list.MyListBloc>().add(my_list.LoadMyList());
-                      } 
-                    : null,
-              ),
-            ],
-          )
-        ],
-      ),
     );
   }
 
@@ -234,13 +165,16 @@ class AnimeDetailView extends StatelessWidget {
         onPressed: () => _showEditorModal(context, state.anime, state.entry),
         child: Text(
           isAdded ? "Edit List" : "Add to List",
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+          style: const TextStyle(
+              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
     );
   }
 
-  void _showEditorModal(BuildContext context, AnimeModel anime, MyAnimeEntryModel? entry) {
+  // --- MODAL EDITOR DENGAN DATE PICKER ---
+  void _showEditorModal(
+      BuildContext context, AnimeModel anime, MyAnimeEntryModel? entry) {
     final detailBloc = context.read<AnimeDetailBloc>();
     final myListBloc = context.read<my_list.MyListBloc>();
 
@@ -257,25 +191,43 @@ class AnimeDetailView extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: const Color(0xFF151F2E),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setState) {
+            // FUNGSI PICK DATE
             Future<void> pickDate(bool isStart) async {
               final DateTime? picked = await showDatePicker(
                 context: context,
-                initialDate: isStart ? (startDate ?? DateTime.now()) : (finishDate ?? DateTime.now()),
+                initialDate: isStart
+                    ? (startDate ?? DateTime.now())
+                    : (finishDate ?? DateTime.now()),
                 firstDate: DateTime(2000),
                 lastDate: DateTime(2100),
-                builder: (context, child) => Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: const ColorScheme.dark(primary: Colors.blue, onPrimary: Colors.white, surface: Color(0xFF1F2937), onSurface: Colors.white),
-                    dialogBackgroundColor: const Color(0xFF151F2E),
-                  ),
-                  child: child!,
-                ),
+                builder: (context, child) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: const ColorScheme.dark(
+                        primary: Colors.blue,
+                        onPrimary: Colors.white,
+                        surface: Color(0xFF1F2937),
+                        onSurface: Colors.white,
+                      ),
+                      dialogBackgroundColor: const Color(0xFF151F2E),
+                    ),
+                    child: child!,
+                  );
+                },
               );
-              if (picked != null) setState(() => isStart ? startDate = picked : finishDate = picked);
+              if (picked != null) {
+                setState(() {
+                  if (isStart)
+                    startDate = picked;
+                  else
+                    finishDate = picked;
+                });
+              }
             }
 
             return Container(
@@ -286,13 +238,20 @@ class AnimeDetailView extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ClipRRect(borderRadius: BorderRadius.circular(4), child: Image.network(anime.coverImageUrl, width: 60, height: 85, fit: BoxFit.cover)),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.network(anime.coverImageUrl,
+                            width: 60, height: 85, fit: BoxFit.cover),
+                      ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(anime.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), maxLines: 2),
+                            Text(anime.title,
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.bold),
+                                maxLines: 2),
                             const SizedBox(height: 10),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
@@ -300,28 +259,25 @@ class AnimeDetailView extends StatelessWidget {
                                 if (entry != null)
                                   TextButton(
                                     onPressed: () {
-                                      detailBloc.add(RemoveFromMyList(animeId: anime.id));
-                                      myListBloc.add(my_list.RemoveFromMyList(animeId: anime.id));
+                                      detailBloc.add(
+                                          RemoveFromMyList(animeId: anime.id));
+                                      myListBloc.add(my_list.RemoveFromMyList(
+                                          animeId: anime.id));
                                       Navigator.pop(context);
                                     },
-                                    child: const Text("Delete", style: TextStyle(color: Colors.redAccent)),
+                                    child: const Text("Delete",
+                                        style:
+                                            TextStyle(color: Colors.redAccent)),
                                   ),
                                 ElevatedButton(
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                                  style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blueAccent),
                                   onPressed: () {
-                                    // --- LOGIKA OTOMATIS DI TOMBOL SAVE ---
-                                    String finalStatus = currentStatus;
-                                    if (maxEpisodes > 0 && currentProgress >= maxEpisodes) {
-                                      finalStatus = 'Completed';
-                                    } else if (currentProgress > 0 && finalStatus == 'Planning') {
-                                      finalStatus = 'Watching';
-                                    }
-
                                     detailBloc.add(SaveAnimeEntry(
                                       animeId: anime.id,
                                       title: anime.title,
                                       coverImageUrl: anime.coverImageUrl,
-                                      status: finalStatus,
+                                      status: currentStatus,
                                       progress: currentProgress,
                                       score: currentScore,
                                       startDate: startDate,
@@ -330,11 +286,23 @@ class AnimeDetailView extends StatelessWidget {
                                       notes: notes,
                                     ));
 
-                                    // Refresh global list juga
-                                    myListBloc.add(my_list.LoadMyList());
+                                    myListBloc.add(my_list.AddOrUpdateEntry(
+                                        entry: MyAnimeEntryModel(
+                                      animeId: anime.id,
+                                      title: anime.title,
+                                      coverImageUrl: anime.coverImageUrl,
+                                      status: currentStatus,
+                                      episodesWatched: currentProgress,
+                                      userScore: currentScore,
+                                      startDate: startDate,
+                                      finishDate: finishDate,
+                                      totalRewatches: totalRewatches,
+                                      notes: notes,
+                                    )));
                                     Navigator.pop(context);
                                   },
-                                  child: const Text("Save", style: TextStyle(color: Colors.white)),
+                                  child: const Text("Save",
+                                      style: TextStyle(color: Colors.white)),
                                 ),
                               ],
                             ),
@@ -344,6 +312,8 @@ class AnimeDetailView extends StatelessWidget {
                     ],
                   ),
                   const Divider(color: Colors.white12, height: 30),
+
+                  // INPUT FORM
                   Expanded(
                     child: SingleChildScrollView(
                       child: Column(
@@ -357,8 +327,22 @@ class AnimeDetailView extends StatelessWidget {
                                     value: currentStatus,
                                     isExpanded: true,
                                     dropdownColor: const Color(0xFF1F2937),
-                                    items: ['Planning', 'Watching', 'Completed', 'Dropped', 'Paused'].map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13, color: Colors.white)))).toList(),
-                                    onChanged: (val) => setState(() => currentStatus = val!),
+                                    items: [
+                                      'Planning',
+                                      'Watching',
+                                      'Completed',
+                                      'Dropped',
+                                      'Paused'
+                                    ]
+                                        .map((s) => DropdownMenuItem(
+                                            value: s,
+                                            child: Text(s,
+                                                style: const TextStyle(
+                                                    fontSize: 13,
+                                                    color: Colors.white))))
+                                        .toList(),
+                                    onChanged: (val) =>
+                                        setState(() => currentStatus = val!),
                                   ),
                                 ),
                               ),
@@ -369,8 +353,10 @@ class AnimeDetailView extends StatelessWidget {
                                   initialValue: currentScore.toString(),
                                   keyboardType: TextInputType.number,
                                   style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                                  onChanged: (val) => currentScore = int.tryParse(val) ?? 0,
+                                  decoration: const InputDecoration(
+                                      border: InputBorder.none, isDense: true),
+                                  onChanged: (val) =>
+                                      currentScore = int.tryParse(val) ?? 0,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -381,18 +367,28 @@ class AnimeDetailView extends StatelessWidget {
                                     Expanded(
                                       child: TextFormField(
                                         key: ValueKey(currentProgress),
-                                        initialValue: currentProgress.toString(),
+                                        initialValue:
+                                            currentProgress.toString(),
                                         keyboardType: TextInputType.number,
-                                        style: const TextStyle(color: Colors.white),
-                                        decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                                        onChanged: (val) => currentProgress = int.tryParse(val) ?? 0,
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                        decoration: const InputDecoration(
+                                            border: InputBorder.none,
+                                            isDense: true),
+                                        onChanged: (val) => currentProgress =
+                                            int.tryParse(val) ?? 0,
                                       ),
                                     ),
                                     IconButton(
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
-                                      icon: const Icon(Icons.add, size: 16, color: Colors.grey),
-                                      onPressed: (maxEpisodes == 0 || currentProgress < maxEpisodes) ? () => setState(() => currentProgress++) : null,
+                                      icon: const Icon(Icons.add,
+                                          size: 16, color: Colors.grey),
+                                      onPressed: (maxEpisodes == 0 ||
+                                              currentProgress < maxEpisodes)
+                                          ? () =>
+                                              setState(() => currentProgress++)
+                                          : null,
                                     ),
                                   ],
                                 ),
@@ -407,10 +403,20 @@ class AnimeDetailView extends StatelessWidget {
                                 child: GestureDetector(
                                   onTap: () => pickDate(true),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(startDate != null ? DateFormat('yyyy-MM-dd').format(startDate!) : "Set Date", style: TextStyle(color: startDate != null ? Colors.white : Colors.grey)),
-                                      const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                                      Text(
+                                          startDate != null
+                                              ? DateFormat('yyyy-MM-dd')
+                                                  .format(startDate!)
+                                              : "Set Date",
+                                          style: TextStyle(
+                                              color: startDate != null
+                                                  ? Colors.white
+                                                  : Colors.grey)),
+                                      const Icon(Icons.calendar_today,
+                                          size: 16, color: Colors.grey),
                                     ],
                                   ),
                                 ),
@@ -422,12 +428,14 @@ class AnimeDetailView extends StatelessWidget {
                                   initialValue: totalRewatches.toString(),
                                   keyboardType: TextInputType.number,
                                   style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration(border: InputBorder.none, isDense: true),
-                                  onChanged: (val) => totalRewatches = int.tryParse(val) ?? 0,
+                                  decoration: const InputDecoration(
+                                      border: InputBorder.none, isDense: true),
+                                  onChanged: (val) =>
+                                      totalRewatches = int.tryParse(val) ?? 0,
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              const Expanded(child: SizedBox()), 
+                              const Expanded(child: SizedBox()),
                             ],
                           ),
                           const SizedBox(height: 16),
@@ -438,32 +446,47 @@ class AnimeDetailView extends StatelessWidget {
                                 child: GestureDetector(
                                   onTap: () => pickDate(false),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(finishDate != null ? DateFormat('yyyy-MM-dd').format(finishDate!) : "Set Date", style: TextStyle(color: finishDate != null ? Colors.white : Colors.grey)),
-                                      const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                                      Text(
+                                          finishDate != null
+                                              ? DateFormat('yyyy-MM-dd')
+                                                  .format(finishDate!)
+                                              : "Set Date",
+                                          style: TextStyle(
+                                              color: finishDate != null
+                                                  ? Colors.white
+                                                  : Colors.grey)),
+                                      const Icon(Icons.calendar_today,
+                                          size: 16, color: Colors.grey),
                                     ],
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              const Expanded(flex: 2, child: SizedBox()), 
+                              const Expanded(flex: 2, child: SizedBox()),
                             ],
                           ),
                           const SizedBox(height: 16),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text("Notes", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                              const Text("Notes",
+                                  style: TextStyle(
+                                      color: Colors.grey, fontSize: 12)),
                               const SizedBox(height: 6),
                               Container(
                                 padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(color: const Color(0xFF1F2937), borderRadius: BorderRadius.circular(6)),
+                                decoration: BoxDecoration(
+                                    color: const Color(0xFF1F2937),
+                                    borderRadius: BorderRadius.circular(6)),
                                 child: TextFormField(
                                   initialValue: notes,
                                   maxLines: 3,
                                   style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration.collapsed(hintText: "Add notes..."),
+                                  decoration: const InputDecoration.collapsed(
+                                      hintText: "Add notes..."),
                                   onChanged: (val) => notes = val,
                                 ),
                               ),
@@ -493,7 +516,9 @@ class AnimeDetailView extends StatelessWidget {
             height: 45,
             alignment: Alignment.centerLeft,
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(color: const Color(0xFF1F2937), borderRadius: BorderRadius.circular(6)),
+            decoration: BoxDecoration(
+                color: const Color(0xFF1F2937),
+                borderRadius: BorderRadius.circular(6)),
             child: child,
           ),
         ],
@@ -505,7 +530,8 @@ class AnimeDetailView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Characters", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text("Characters",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         SizedBox(
           height: 140,
@@ -519,9 +545,15 @@ class AnimeDetailView extends StatelessWidget {
                 width: 80,
                 child: Column(
                   children: [
-                    CircleAvatar(radius: 35, backgroundImage: NetworkImage(char.imageUrl)),
+                    CircleAvatar(
+                        radius: 35,
+                        backgroundImage: NetworkImage(char.imageUrl)),
                     const SizedBox(height: 8),
-                    Text(char.name, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
+                    Text(char.name,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11)),
                   ],
                 ),
               );
@@ -536,7 +568,8 @@ class AnimeDetailView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Recommendations", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text("Recommendations",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
         SizedBox(
           height: 180,
@@ -547,15 +580,25 @@ class AnimeDetailView extends StatelessWidget {
             itemBuilder: (context, index) {
               final rec = recs[index];
               return GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AnimeDetailScreen(animeId: rec.id))),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => AnimeDetailScreen(animeId: rec.id))),
                 child: SizedBox(
                   width: 110,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(rec.coverImageUrl, height: 140, width: 110, fit: BoxFit.cover)),
+                      ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(rec.coverImageUrl,
+                              height: 140, width: 110, fit: BoxFit.cover)),
                       const SizedBox(height: 6),
-                      Text(rec.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                      Text(rec.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.w500)),
                     ],
                   ),
                 ),

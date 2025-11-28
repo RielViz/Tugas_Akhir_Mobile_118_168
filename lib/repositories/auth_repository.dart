@@ -8,8 +8,7 @@ import '../models/user_model.dart';
 
 class AuthRepository {
   final Box<User> _userBox = Hive.box<User>('userBox');
-  
-  // HAPUS: final Box _sessionBox = Hive.box('sessionBox');
+  // HAPUS: _sessionBox
 
   Future<void> register(String username, String password) async {
     if (_userBox.containsKey(username)) {
@@ -35,13 +34,11 @@ class AuthRepository {
       throw Exception('Password salah');
     }
 
-    // HAPUS LOGIC INI:
-    // await _sessionBox.put('current_user', username);
-
+    // HAPUS: Logika simpan sesi dihapus
     return user;
   }
 
-  // HAPUS FUNGSI getCurrentUser() SEPENUHNYA
+  // HAPUS: Method getCurrentUser() dibuang
 
   Future<User> updateProfilePicture(
       String username, String newImagePath) async {
@@ -63,7 +60,6 @@ class AuthRepository {
   }
 
   Future<void> logout() async {
-    // HAPUS LOGIC INI:
-    // await _sessionBox.delete('current_user');
+    // HAPUS: Logika hapus sesi dihapus
   }
 }

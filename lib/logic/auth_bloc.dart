@@ -14,7 +14,7 @@ abstract class AuthEvent extends Equatable {
   List<Object> get props => [];
 }
 
-// HAPUS: class AuthCheckSession extends AuthEvent {}
+// HAPUS: AuthCheckSession
 
 class LoginButtonPressed extends AuthEvent {
   final String username;
@@ -81,7 +81,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc({required this.authRepository}) : super(AuthInitial()) {
     
-    // HAPUS HANDLER on<AuthCheckSession>
+    // HAPUS: Handler AuthCheckSession
 
     on<LoginButtonPressed>((event, emit) async {
       emit(AuthLoading());
