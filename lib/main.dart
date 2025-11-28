@@ -39,19 +39,19 @@ void main() async {
 
   // Register Adapters
   Hive.registerAdapter(UserAdapter());
-  Hive.registerAdapter(MyAnimeEntryModelAdapter()); // Pastikan tanpa 'as TypeAdapter'
+  Hive.registerAdapter(MyAnimeEntryModelAdapter());
 
   // Open Boxes
   await Hive.openBox<User>('userBox');
   await Hive.openBox<MyAnimeEntryModel>('myAnimeEntryBox');
-  await Hive.openBox('graphqlClientStore'); // Buka box untuk cache API
+  await Hive.openBox('graphqlClientStore');
   await Hive.openBox<String>('searchHistoryBox');
-  await Hive.openBox('sessionBox');
+  // HAPUS: await Hive.openBox('sessionBox'); <-- Bagian ini dihapus
 
   // Ambil box yang sudah dibuka
   final graphqlBox = Hive.box('graphqlClientStore');
   
-  // Kirim ke config (sekarang tipenya cocok: Box<dynamic>)
+  // Kirim ke config
   final client = GraphQLClientConfig.initializeClient(graphqlBox);
 
   runApp(MyApp(graphqlClient: client));
@@ -87,7 +87,8 @@ class MyApp extends StatelessWidget {
             BlocProvider<AuthBloc>(
               create: (context) => AuthBloc(
                 authRepository: context.read<AuthRepository>(),
-              )..add(AuthCheckSession()), 
+              ),
+              // HAPUS: ..add(AuthCheckSession()), <-- Bagian ini dihapus
             ),
             BlocProvider<MyListBloc>(
               create: (context) => MyListBloc(
@@ -102,14 +103,8 @@ class MyApp extends StatelessWidget {
               primarySwatch: Colors.blue,
               brightness: Brightness.dark,
             ),
-            home: BlocBuilder<AuthBloc, AuthState>(
-              builder: (context, state) {
-                if (state is AuthAuthenticated) {
-                  return const MainShell();
-                }
-                return const LoginPage();
-              },
-            ),
+            // KEMBALIKAN LANGSUNG KE LOGIN PAGE
+            home: const LoginPage(),
           ),
         ),
       ),

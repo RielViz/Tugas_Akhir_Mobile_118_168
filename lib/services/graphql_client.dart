@@ -1,26 +1,24 @@
 // --------------------------------
-// lib/services/graphql_client.dart
+// lib/core/api/graphql_client.dart
 // --------------------------------
 
 import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive/hive.dart';
 
 class GraphQLClientConfig {
+  //URL endpoint untuk AniList API
   static final HttpLink _httpLink = HttpLink(
     'https://graphql.anilist.co',
   );
-
-  // PERBAIKAN: Hapus tanda '?' setelah Box<dynamic>
-  // Ubah 'Box<dynamic>? box' menjadi 'Box<dynamic> box'
-  static ValueNotifier<GraphQLClient> initializeClient(Box<dynamic> box) {
+  //Inisialisasi GraphQL Client
+  static ValueNotifier<GraphQLClient> initializeClient(Box graphqlBox) {
     final Link link = _httpLink;
 
     return ValueNotifier(
       GraphQLClient(
         link: link,
-        // Sekarang 'box' sudah pasti tidak null, jadi bisa langsung dipakai
-        cache: GraphQLCache(store: HiveStore()), 
+        cache: GraphQLCache(store: HiveStore()),
       ),
     );
   }

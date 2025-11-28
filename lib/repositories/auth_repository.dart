@@ -8,8 +8,8 @@ import '../models/user_model.dart';
 
 class AuthRepository {
   final Box<User> _userBox = Hive.box<User>('userBox');
-  // Box baru untuk menyimpan sesi login
-  final Box _sessionBox = Hive.box('sessionBox'); 
+  
+  // HAPUS: final Box _sessionBox = Hive.box('sessionBox');
 
   Future<void> register(String username, String password) async {
     if (_userBox.containsKey(username)) {
@@ -35,23 +35,13 @@ class AuthRepository {
       throw Exception('Password salah');
     }
 
-    // --- SIMPAN SESI (Username) KE HIVE ---
-    await _sessionBox.put('current_user', username);
+    // HAPUS LOGIC INI:
+    // await _sessionBox.put('current_user', username);
 
     return user;
   }
 
-  // --- FUNGSI BARU: CEK SESI SAAT APP DIBUKA ---
-  Future<User?> getCurrentUser() async {
-    // Ambil username yang tersimpan di sesi
-    final String? username = _sessionBox.get('current_user');
-    
-    if (username != null) {
-      // Jika ada, kembalikan object User dari database
-      return _userBox.get(username);
-    }
-    return null; // Tidak ada sesi
-  }
+  // HAPUS FUNGSI getCurrentUser() SEPENUHNYA
 
   Future<User> updateProfilePicture(
       String username, String newImagePath) async {
@@ -73,7 +63,7 @@ class AuthRepository {
   }
 
   Future<void> logout() async {
-    // --- HAPUS SESI SAAT LOGOUT ---
-    await _sessionBox.delete('current_user');
+    // HAPUS LOGIC INI:
+    // await _sessionBox.delete('current_user');
   }
 }

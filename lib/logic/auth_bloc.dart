@@ -14,8 +14,7 @@ abstract class AuthEvent extends Equatable {
   List<Object> get props => [];
 }
 
-// EVENT BARU: Cek Sesi
-class AuthCheckSession extends AuthEvent {}
+// HAPUS: class AuthCheckSession extends AuthEvent {}
 
 class LoginButtonPressed extends AuthEvent {
   final String username;
@@ -82,21 +81,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc({required this.authRepository}) : super(AuthInitial()) {
     
-    // HANDLER BARU: Cek Sesi
-    on<AuthCheckSession>((event, emit) async {
-      // Jangan emit Loading agar tidak flicker di splash screen (opsional)
-      // emit(AuthLoading()); 
-      try {
-        final user = await authRepository.getCurrentUser();
-        if (user != null) {
-          emit(AuthAuthenticated(user: user));
-        } else {
-          emit(AuthUnauthenticated());
-        }
-      } catch (e) {
-        emit(AuthUnauthenticated());
-      }
-    });
+    // HAPUS HANDLER on<AuthCheckSession>
 
     on<LoginButtonPressed>((event, emit) async {
       emit(AuthLoading());
